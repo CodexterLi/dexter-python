@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 from pydantic import ValidationError
 
-from app.api.api import api_router
+from app.api.router import api_router
 from app.config.settings import settings
 from app.core.exceptions import (
     APIException,

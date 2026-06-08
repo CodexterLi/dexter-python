@@ -18,7 +18,7 @@ from app.db.redis_keys.base import TTL
 from app.db.redis_keys.cache import CacheKeys
 from app.models.api_key import ApiKey
 from app.repositories.api_key_repository import ApiKeyRepository
-from app.utils.snowflake import generate_id
+from packages.common.snowflake import generate_id
 
 # API Key 前缀
 KEY_PREFIX = "dxt_"

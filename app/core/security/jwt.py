@@ -8,7 +8,7 @@ import jwt
 from pydantic import BaseModel
 
 from app.config.settings import settings
-from app.utils.timezone import tz
+from packages.common.time import tz
 
 
 class TokenData(BaseModel):

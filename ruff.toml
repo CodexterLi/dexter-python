@@ -30,7 +30,7 @@ ignore = [
 "app/models/*.py" = ["TC003"]
 
 [lint.isort]
-known-first-party = ["app"]
+known-first-party = ["app", "packages"]
 
 [format]
 quote-style = "double"

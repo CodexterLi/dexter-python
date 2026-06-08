@@ -8,7 +8,7 @@ from fastapi import Response
 
 from app.config.settings import settings
 from app.core.logging import logger
-from app.utils.timezone import tz
+from packages.common.time import tz
 
 # Cookie 名称
 ACCESS_TOKEN_COOKIE_NAME = "access_token"

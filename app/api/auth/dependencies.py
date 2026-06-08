@@ -19,7 +19,7 @@ from app.core.security import (
 from app.db.postgres import get_db
 from app.models.user import User
 from app.services.auth import AuthService
-from app.utils.timezone import tz
+from packages.common.time import tz
 
 
 def get_auth_service(db: AsyncSession = Depends(get_db)) -> AuthService:
