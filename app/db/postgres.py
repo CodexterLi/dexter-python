@@ -46,6 +46,9 @@ def get_database_url() -> str:
     Raises:
         ValueError: 数据库配置不完整
     """
+    if settings.DATABASE_URL:
+        return _normalize_database_url(settings.DATABASE_URL)
+
     if not all(
         [
             settings.DB_USER,
@@ -63,6 +66,27 @@ def get_database_url() -> str:
         f"postgresql+asyncpg://{settings.DB_USER}:{encoded_password}"
         f"@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}"
     )
+
+
+def _normalize_database_url(url: str) -> str:
+    """Normalize external PostgreSQL URLs for SQLAlchemy asyncpg."""
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme not in {"postgresql", "postgres", "postgresql+asyncpg"}:
+        return url
+
+    normalized = parsed._replace(scheme="postgresql+asyncpg", query="")
+    return urllib.parse.urlunparse(normalized)
+
+
+def _requires_ssl() -> bool:
+    if settings.DB_SSL:
+        return True
+    if settings.DATABASE_URL:
+        parsed = urllib.parse.urlparse(settings.DATABASE_URL)
+        query = urllib.parse.parse_qs(parsed.query)
+        sslmode = query.get("sslmode", [""])[0]
+        return sslmode in {"require", "verify-ca", "verify-full"}
+    return bool(settings.DB_HOST and settings.DB_HOST.endswith(".neon.tech"))
 
 
 # ============ 连接池配置 ============
@@ -104,6 +128,8 @@ def get_engine() -> AsyncEngine:
                 "client_encoding": "UTF8",
             }
         }
+        if _requires_ssl():
+            connect_args["ssl"] = True
         _engine = create_async_engine(
             get_database_url(),
             echo=settings.DB_ECHO,

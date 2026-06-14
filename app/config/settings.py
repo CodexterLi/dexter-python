@@ -41,17 +41,20 @@ class Settings(BaseSettings):
     REDIS_DB: int = 0
     REDIS_PASSWORD: str | None = None
     REDIS_USERNAME: str | None = None
+    REDIS_URL: str | None = None
     REDIS_USE_SSL: bool = False
     REDIS_TIMEOUT: int = 10
     REDIS_POOL_MIN_SIZE: int = 5  # 连接池最小连接数
     REDIS_POOL_MAX_SIZE: int = 20  # 连接池最大连接数
 
     # ============ 数据库配置 ============
+    DATABASE_URL: str | None = None
     DB_USER: str | None = None
     DB_PASSWORD: str | None = None
     DB_HOST: str | None = None
     DB_PORT: int | None = None
     DB_NAME: str | None = None
+    DB_SSL: bool = False
     DB_ECHO: bool = False  # 是否输出 SQL 日志
 
     # ============ 日志配置 ============
@@ -73,7 +76,7 @@ class Settings(BaseSettings):
     QUEUE_WORKER_CONSUMERS: list[str] = []
 
     # Pydantic v2 中使用 model_config 替代 Config 类
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", case_sensitive=True)
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", case_sensitive=True, extra="ignore")
 
 
 # 创建全局配置实例

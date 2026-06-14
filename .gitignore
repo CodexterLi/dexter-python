@@ -52,6 +52,9 @@ logs/
 
 # User config file
 config.yaml
+.env
+.env.*
+!.env.example
 
 # Langgraph
 .langgraph_api

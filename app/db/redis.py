@@ -15,6 +15,13 @@ _redis_client: aioredis.Redis | None = None
 _connection_pool: ConnectionPool | None = None
 
 
+def _normalize_redis_url(url: str) -> str:
+    """Use rediss:// when SSL is enabled for URL-based Redis connections."""
+    if settings.REDIS_USE_SSL and url.startswith("redis://"):
+        return "rediss://" + url.removeprefix("redis://")
+    return url
+
+
 async def init_redis() -> aioredis.Redis:
     """
     初始化 Redis 连接
@@ -30,6 +37,23 @@ async def init_redis() -> aioredis.Redis:
         return _redis_client
 
     try:
+        if settings.REDIS_URL:
+            _redis_client = aioredis.from_url(
+                _normalize_redis_url(settings.REDIS_URL),
+                db=settings.REDIS_DB,
+                encoding="utf-8",
+                decode_responses=False,
+                socket_timeout=settings.REDIS_TIMEOUT,
+                socket_connect_timeout=settings.REDIS_TIMEOUT,
+                retry_on_timeout=True,
+                health_check_interval=30,
+                max_connections=settings.REDIS_POOL_MAX_SIZE,
+            )
+            _connection_pool = _redis_client.connection_pool
+            await _redis_client.ping()
+            logger.info(f"✅ Redis 连接成功: {settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}")
+            return _redis_client
+
         # 1. 构建连接池配置
         pool_config: dict = {
             "host": settings.REDIS_HOST,
