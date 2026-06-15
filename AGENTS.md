@@ -63,7 +63,7 @@ Background Worker (`make worker`)
 - `main.py`：FastAPI 入口。生命周期中初始化/关闭 DB 与 Redis，注册 CORS 和异常处理器。
 - `api/`：HTTP/WebSocket 路由。
   - `router.py`：主路由聚合入口。
-  - `api.py`：兼容旧导入的 wrapper，保留 `api_router`。
+  - `dependencies.py`：API 层通用依赖，例如当前用户、认证 service、DB session。
   - `auth/`：登录、注册、钱包登录、TOTP、API Key、用户资料。
   - `websocket/`：WebSocket 路由和连接管理。
   - `common/`：健康检查、文档等公共路由。

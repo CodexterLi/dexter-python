@@ -4,21 +4,19 @@ TOTP 两步验证
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, HTTPException, status
 
-from app.api.auth.dependencies import get_auth_service, get_current_active_user
+from app.api.dependencies import AuthServiceDep, CurrentUser
 from app.core.responses import ok
-from app.models.user import User
 from app.schemas.auth import TOTPSetupResponse, TOTPVerifyRequest, UserResponse
-from app.services.auth import AuthService
 
 router = APIRouter()
 
 
 @router.post("/totp/setup", response_model=TOTPSetupResponse)
 async def setup_totp(
-    current_user: User = Depends(get_current_active_user),
-    auth_service: AuthService = Depends(get_auth_service),
+    current_user: CurrentUser,
+    auth_service: AuthServiceDep,
 ) -> Any:
     """设置 TOTP 两步验证"""
     result = await auth_service.setup_totp(current_user.id, current_user.username)
@@ -28,8 +26,8 @@ async def setup_totp(
 @router.post("/totp/verify", response_model=UserResponse)
 async def verify_totp(
     totp_data: TOTPVerifyRequest,
-    current_user: User = Depends(get_current_active_user),
-    auth_service: AuthService = Depends(get_auth_service),
+    current_user: CurrentUser,
+    auth_service: AuthServiceDep,
 ) -> Any:
     """验证并启用 TOTP 两步验证"""
     try:
@@ -48,8 +46,8 @@ async def verify_totp(
 
 @router.post("/totp/disable", response_model=UserResponse)
 async def disable_totp(
-    current_user: User = Depends(get_current_active_user),
-    auth_service: AuthService = Depends(get_auth_service),
+    current_user: CurrentUser,
+    auth_service: AuthServiceDep,
 ) -> Any:
     """禁用 TOTP 两步验证"""
     try:

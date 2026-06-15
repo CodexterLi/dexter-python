@@ -1,16 +1,11 @@
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from app.api.api import api_router as legacy_api_router
 from app.api.docs import SCALAR_DOCS_PATH, register_api_docs
 from app.api.router import api_router
 from app.utils.snowflake import generate_id as legacy_generate_id
 from app.utils.timezone import tz as legacy_tz
 from packages.common import generate_id, utc_now
-
-
-def test_api_router_compatibility_wrapper() -> None:
-    assert legacy_api_router is api_router
 
 
 def test_scalar_docs_route_is_registered_outside_openapi_schema() -> None:

@@ -5,9 +5,9 @@
 from typing import Any
 
 import jwt
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, HTTPException, Request, Response, status
 
-from app.api.auth.dependencies import get_auth_service, get_current_active_user
+from app.api.dependencies import AuthServiceDep, CurrentUser
 from app.core.security import (
     REFRESH_TOKEN_COOKIE_NAME,
     clear_auth_cookies,
@@ -15,9 +15,7 @@ from app.core.security import (
     set_access_token_cookie,
     set_refresh_token_cookie,
 )
-from app.models.user import User
 from app.schemas.auth import LoginRequest, TokenResponse
-from app.services.auth import AuthService
 
 router = APIRouter()
 
@@ -26,7 +24,7 @@ router = APIRouter()
 async def login(
     response: Response,
     login_data: LoginRequest,
-    auth_service: AuthService = Depends(get_auth_service),
+    auth_service: AuthServiceDep,
 ) -> Any:
     """用户登录"""
     try:
@@ -62,7 +60,7 @@ async def login(
 async def refresh_token(
     request: Request,
     response: Response,
-    auth_service: AuthService = Depends(get_auth_service),
+    auth_service: AuthServiceDep,
 ) -> Any:
     """刷新访问令牌"""
     refresh_token_cookie = request.cookies.get(REFRESH_TOKEN_COOKIE_NAME)
@@ -107,7 +105,7 @@ async def refresh_token(
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout(
     response: Response,
-    current_user: User = Depends(get_current_active_user),
+    current_user: CurrentUser,
 ) -> None:
     """用户登出"""
     clear_auth_cookies(response)

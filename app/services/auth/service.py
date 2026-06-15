@@ -46,6 +46,10 @@ class AuthService:
         """注册新用户"""
         return await self.user_repository.create_user(user_data)
 
+    async def get_user_by_username(self, username: str) -> User | None:
+        """通过用户名获取用户"""
+        return await self.user_repository.get_by_username(username)
+
     async def authenticate_user(self, username: str, password: str) -> User | None:
         """验证用户凭据"""
         user = await self.user_repository.get_by_username(username)

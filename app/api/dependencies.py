@@ -1,14 +1,14 @@
 """
-认证模块依赖注入
+API 层通用依赖注入
 
-提供认证相关的 FastAPI 依赖函数
+集中放置可跨业务路由复用的 FastAPI 依赖。
 """
 
 from datetime import datetime
+from typing import Annotated
 
 import jwt
 from fastapi import Depends, HTTPException, Request, status
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import logger
@@ -21,8 +21,10 @@ from app.models.user import User
 from app.services.auth import AuthService
 from packages.common.time import tz
 
+DBSessionDep = Annotated[AsyncSession, Depends(get_db)]
 
-def get_auth_service(db: AsyncSession = Depends(get_db)) -> AuthService:
+
+def get_auth_service(db: DBSessionDep) -> AuthService:
     """获取认证服务实例"""
     return AuthService(db)
 
@@ -55,16 +57,10 @@ async def get_token(request: Request) -> str | None:
 # ============ 用户认证依赖 ============
 
 
-async def get_user_by_username(db: AsyncSession, username: str) -> User | None:
-    """通过用户名获取用户"""
-    result = await db.execute(select(User).where(User.username == username))
-    return result.scalar_one_or_none()
-
-
 async def get_current_user(
     request: Request,
-    db: AsyncSession = Depends(get_db),
-    token: str | None = Depends(get_token),
+    auth_service: Annotated[AuthService, Depends(get_auth_service)],
+    token: Annotated[str | None, Depends(get_token)],
 ) -> User:
     """获取当前用户"""
     credentials_exception = HTTPException(
@@ -89,7 +85,7 @@ async def get_current_user(
     except jwt.PyJWTError:
         raise credentials_exception from None
 
-    user = await get_user_by_username(db, username)
+    user = await auth_service.get_user_by_username(username)
     if not user:
         raise credentials_exception
 
@@ -97,7 +93,7 @@ async def get_current_user(
 
 
 async def get_current_active_user(
-    current_user: User = Depends(get_current_user),
+    current_user: Annotated[User, Depends(get_current_user)],
 ) -> User:
     """获取当前活跃用户"""
     if not current_user.is_active:
@@ -106,7 +102,7 @@ async def get_current_active_user(
 
 
 async def get_current_superuser(
-    current_user: User = Depends(get_current_user),
+    current_user: Annotated[User, Depends(get_current_user)],
 ) -> User:
     """获取当前超级用户"""
     if not current_user.is_superuser:
@@ -119,7 +115,7 @@ async def get_current_superuser(
 
 async def get_current_user_from_api_key(
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    auth_service: Annotated[AuthService, Depends(get_auth_service)],
 ) -> User:
     """
     通过 X-Api-Key + X-Api-Secret 认证
@@ -135,7 +131,6 @@ async def get_current_user_from_api_key(
             detail="missing X-Api-Key or X-Api-Secret",
         )
 
-    auth_service = AuthService(db)
     try:
         return await auth_service.authenticate_api_key(api_key, api_secret)
     except ValueError as e:
@@ -150,7 +145,7 @@ async def get_current_user_from_api_key(
 
 async def get_current_user_flexible(
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    auth_service: Annotated[AuthService, Depends(get_auth_service)],
 ) -> User:
     """
     灵活认证：优先 JWT (Cookie/Header)，其次 API Key
@@ -166,7 +161,7 @@ async def get_current_user_flexible(
             if username:
                 exp_timestamp = payload.get("exp")
                 if not exp_timestamp or tz.now_naive() <= datetime.fromtimestamp(exp_timestamp):
-                    user = await get_user_by_username(db, username)
+                    user = await auth_service.get_user_by_username(username)
                     if user:
                         return user
         except jwt.PyJWTError:
@@ -176,7 +171,6 @@ async def get_current_user_flexible(
     api_key = request.headers.get("X-Api-Key")
     api_secret = request.headers.get("X-Api-Secret")
     if api_key and api_secret:
-        auth_service = AuthService(db)
         try:
             return await auth_service.authenticate_api_key(api_key, api_secret)
         except ValueError:
@@ -204,10 +198,9 @@ async def get_current_user_from_token(token: str) -> User | None:
         if exp and tz.now_naive() > datetime.fromtimestamp(exp):
             return None
 
-        from app.db.postgres import get_db
-
         async for db in get_db():
-            user = await get_user_by_username(db, username)
+            auth_service = AuthService(db)
+            user = await auth_service.get_user_by_username(username)
             if user and user.is_active:
                 return user
             break
@@ -218,3 +211,9 @@ async def get_current_user_from_token(token: str) -> User | None:
     except Exception as e:
         logger.error(f"从令牌获取用户失败: {e}")
         return None
+
+
+AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
+CurrentUser = Annotated[User, Depends(get_current_active_user)]
+SuperUser = Annotated[User, Depends(get_current_superuser)]
+FlexibleCurrentUser = Annotated[User, Depends(get_current_user_flexible)]

@@ -4,9 +4,9 @@
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, HTTPException, Response, status
 
-from app.api.auth.dependencies import get_auth_service
+from app.api.dependencies import AuthServiceDep
 from app.core.security import set_access_token_cookie, set_refresh_token_cookie
 from app.schemas.auth import (
     WalletLoginRequest,
@@ -14,7 +14,6 @@ from app.schemas.auth import (
     WalletNonceRequest,
     WalletNonceResponse,
 )
-from app.services.auth import AuthService
 
 router = APIRouter()
 
@@ -22,7 +21,7 @@ router = APIRouter()
 @router.post("/wallet/nonce", response_model=WalletNonceResponse)
 async def get_wallet_nonce(
     req: WalletNonceRequest,
-    auth_service: AuthService = Depends(get_auth_service),
+    auth_service: AuthServiceDep,
 ) -> Any:
     """获取钱包签名随机数"""
     nonce, message = await auth_service.get_wallet_nonce(req.wallet_address)
@@ -33,7 +32,7 @@ async def get_wallet_nonce(
 async def wallet_login(
     response: Response,
     req: WalletLoginRequest,
-    auth_service: AuthService = Depends(get_auth_service),
+    auth_service: AuthServiceDep,
 ) -> Any:
     """钱包登录（签名验证 + 自动注册）"""
     try:

@@ -15,12 +15,6 @@ worker:
 docker-build:
 	docker build -t drexor-python:latest .
 
-docker-run-api:
-	docker run --rm --env-file .env -p 8000:8000 drexor-python:latest
-
-docker-run-worker:
-	docker run --rm --env-file .env drexor-python:latest python -m app.worker
-
 test:
 	uv run pytest -v
 
@@ -33,4 +27,6 @@ format:
 
 upgrade:
 	uv lock --upgrade
+	uv run python scripts/sync_pyproject_versions.py
+	uv lock
 	uv sync
