@@ -10,6 +10,7 @@ from fastapi import APIRouter, HTTPException, Request, Response, status
 from app.api.dependencies import AuthServiceDep, CurrentUser
 from app.core.security import (
     REFRESH_TOKEN_COOKIE_NAME,
+    TOKEN_TYPE_REFRESH,
     clear_auth_cookies,
     decode_token,
     set_access_token_cookie,
@@ -71,7 +72,7 @@ async def refresh_token(
         )
 
     try:
-        payload = decode_token(refresh_token_cookie)
+        payload = decode_token(refresh_token_cookie, expected_type=TOKEN_TYPE_REFRESH)
         username = payload.get("sub")
         if username is None:
             raise HTTPException(

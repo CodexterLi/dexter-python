@@ -4,7 +4,6 @@ API 层通用依赖注入
 集中放置可跨业务路由复用的 FastAPI 依赖。
 """
 
-from datetime import datetime
 from typing import Annotated
 
 import jwt
@@ -14,12 +13,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.logging import logger
 from app.core.security import (
     ACCESS_TOKEN_COOKIE_NAME,
+    TOKEN_TYPE_ACCESS,
     decode_token,
 )
 from app.db.postgres import get_db
 from app.models.user import User
 from app.services.auth import AuthService
-from packages.common.time import tz
 
 DBSessionDep = Annotated[AsyncSession, Depends(get_db)]
 
@@ -73,13 +72,9 @@ async def get_current_user(
         raise credentials_exception
 
     try:
-        payload = decode_token(token)
+        payload = decode_token(token, expected_type=TOKEN_TYPE_ACCESS)
         username = payload.get("sub")
         if not username:
-            raise credentials_exception
-
-        exp_timestamp = payload.get("exp")
-        if exp_timestamp and tz.now_naive() > datetime.fromtimestamp(exp_timestamp):
             raise credentials_exception
 
     except jwt.PyJWTError:
@@ -156,14 +151,12 @@ async def get_current_user_flexible(
     token = await get_token(request)
     if token:
         try:
-            payload = decode_token(token)
+            payload = decode_token(token, expected_type=TOKEN_TYPE_ACCESS)
             username = payload.get("sub")
             if username:
-                exp_timestamp = payload.get("exp")
-                if not exp_timestamp or tz.now_naive() <= datetime.fromtimestamp(exp_timestamp):
-                    user = await auth_service.get_user_by_username(username)
-                    if user:
-                        return user
+                user = await auth_service.get_user_by_username(username)
+                if user:
+                    return user
         except jwt.PyJWTError:
             pass
 
@@ -189,13 +182,9 @@ async def get_current_user_flexible(
 async def get_current_user_from_token(token: str) -> User | None:
     """从令牌获取用户（用于 WebSocket 等场景）"""
     try:
-        payload = decode_token(token)
+        payload = decode_token(token, expected_type=TOKEN_TYPE_ACCESS)
         username = payload.get("sub")
         if not username:
-            return None
-
-        exp = payload.get("exp")
-        if exp and tz.now_naive() > datetime.fromtimestamp(exp):
             return None
 
         async for db in get_db():

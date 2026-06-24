@@ -18,6 +18,8 @@ from app.core.security.cookie import (
     set_refresh_token_cookie,
 )
 from app.core.security.jwt import (
+    TOKEN_TYPE_ACCESS,
+    TOKEN_TYPE_REFRESH,
     TokenData,
     create_access_token,
     create_refresh_token,
@@ -40,6 +42,8 @@ from app.core.security.wallet import (
 __all__ = [
     "ACCESS_TOKEN_COOKIE_NAME",
     "REFRESH_TOKEN_COOKIE_NAME",
+    "TOKEN_TYPE_ACCESS",
+    "TOKEN_TYPE_REFRESH",
     "TokenData",
     "build_sign_message",
     "clear_auth_cookies",

@@ -6,6 +6,8 @@ from __future__ import annotations
 import asyncio
 from pathlib import Path
 
+import typer
+
 from app.core.logging import logger, setup_logging
 from app.db.postgres import close_db, get_engine
 
@@ -36,7 +38,7 @@ async def _apply_migration(path: Path) -> None:
     logger.info(f"已执行迁移: {path}")
 
 
-async def main() -> None:
+async def _run() -> None:
     setup_logging()
     try:
         for path in _migration_files():
@@ -46,5 +48,10 @@ async def main() -> None:
         await close_db()
 
 
+def main() -> None:
+    """按编号顺序执行 migrations/*.sql 初始化数据库。"""
+    asyncio.run(_run())
+
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    typer.run(main)
